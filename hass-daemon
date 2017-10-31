@@ -10,7 +10,7 @@
 
 # /etc/init.d Service Script for Home Assistant
 # Created with: https://gist.github.com/naholyr/4275302#file-new-service-sh
-PRE_EXEC=""
+PRE_EXEC="sudo su -s /bin/bash homeasssistant"
 # Typically /usr/bin/hass
 HASS_BIN="/home/homeassistant/berryconda3/bin/hass"
 # CHANGE THIS IS USING ANOTHER USERNAME
