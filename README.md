@@ -1,5 +1,5 @@
-Notes on installing Home Assistant next to OSMC
+Installing Home Assistant on an OSMC system
 ====
-First thing first, check out INSTALL.md
+These are just my notes on installing Home Assistant on the same SD-card as is used for OSMC on a Raspberry Pi 2.
 
 This in total will take up about 1.8GB of space
