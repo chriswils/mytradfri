@@ -16,7 +16,7 @@ HASS_BIN="/home/homeassistant/berryconda3/bin/hass"
 # CHANGE THIS IS USING ANOTHER USERNAME
 RUN_AS="homeassistant"
 PID_FILE="/var/run/hass.pid"
-CONFIG_DIR="/var/opt/homeassistant"
+CONFIG_DIR="/home/homeassistant/.homeassistant"
 FLAGS="-v --config $CONFIG_DIR --pid-file $PID_FILE --daemon"
 REDIRECT="> $CONFIG_DIR/home-assistant.log 2>&1"
 
