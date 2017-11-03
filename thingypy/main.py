@@ -17,6 +17,13 @@ class NewDelegate(btle.DefaultDelegate):
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
         if (hnd == thingy52.ui_button_handle):
             print("Notification: Button press received: {}".format(repr(data)))
+    
+    def _str_to_int(self, s):
+        """ Transform hex str into int. """
+        i = int(s, 16)
+        if i >= 2**7:
+            i -= 2**8
+        return i 
 
 print("# Connecting to Thingy with address {}...".format(MAC_ADDRESS))
 thingy = thingy52.Thingy52(MAC_ADDRESS)
