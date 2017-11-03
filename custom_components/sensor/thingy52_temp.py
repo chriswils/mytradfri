@@ -23,7 +23,9 @@ state = None
 
 """ Custom delegate class to handle notifications from the Thingy:52 """
 class NotificationDelegate(btle.DefaultDelegate):
+    print("# [THINGYTEMP]: Delegate class called")
     def handleNotification(self, hnd, data):
+        print("# [THINGYTEMP]: Got notification")
         if (hnd == thingy52.e_temperature_handle):
             print("Notification: Temperature received: {}".format(repr(data)))
             teptep = binascii.b2a_hex(data)
@@ -72,6 +74,10 @@ class Thingy52TempSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
+        if (state is None):
+            self._state = 20
+        else:
+            self._state = state
         return self._state
 
     @property
