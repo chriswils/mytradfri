@@ -58,7 +58,7 @@ sun:
 # Weather prediction
 sensor:
   - platform: yr
-  - platform: example
+  - platform: thingy52_temp
 
 # Text to speech
 tts:
