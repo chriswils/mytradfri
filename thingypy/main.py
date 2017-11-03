@@ -14,6 +14,9 @@ class NewDelegate(btle.DefaultDelegate):
             print("Notification: Temperature received: {}".format(repr(data)))
         if (hnd == thingy52.ui_button_handle):
             print("Notification: Button press received: {}".format(repr(data)))
+            teptep = binascii.b2a_hex(data)
+            print('Notification: Temp received:  {}.{} degCelcius'.format(
+                        self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
 
 print("# Connecting to Thingy with address {}...".format(MAC_ADDRESS))
 thingy = thingy52.Thingy52(MAC_ADDRESS)
