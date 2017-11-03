@@ -52,17 +52,17 @@ class Thingy52TempSensor(Entity):
     def __init__(self):
         """Initialize the sensor."""
         print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
-        thingy = thingy52.Thingy52(MAC_ADDRESS)
+        self.thingy = thingy52.Thingy52(MAC_ADDRESS)
 
         # Set delegate, and pass on a reference to self
-        thingy.setDelegate(NotificationDelegate())
+        self.thingy.setDelegate(NotificationDelegate())
 
         print("#[THINGYTEMP]: Configuring and enabling temperature notification...")
-        thingy.environment.enable()
+        self.thingy.environment.enable()
         # Temperature update interval 1000ms = 1s
-        thingy.environment.configure(temp_int=1000)
+        self.thingy.environment.configure(temp_int=1000)
         # Enable notifications 
-        thingy.environment.set_temperature_notification(True)
+        self.thingy.environment.set_temperature_notification(True)
 
         self._state = None
 
@@ -74,7 +74,7 @@ class Thingy52TempSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        thingy.waitForNotifications(timeout=5)
+        # thingy.waitForNotifications(timeout=5)
 
         if (state is None):
             self._state = 20
@@ -92,6 +92,6 @@ class Thingy52TempSensor(Entity):
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        thingy.waitForNotifications(timeout=5)
+        self.thingy.waitForNotifications(timeout=5)
 
         self._state = state
