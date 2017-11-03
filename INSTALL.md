@@ -82,3 +82,20 @@ $ hass
 
 Now, let it finish, and test the server at <http://YOUR_IP:8213> and see that everything is working (this might take a while). If all good, move on to installing the daemon to add it to auto start
 
+Note: If you want to run it in a virtual environment, and it gives you this error
+
+```
+python -m venv .
+Error: Command '['/home/homeassistant/lol/bin/python', '-Im', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1
+```
+
+just do it like this
+```
+python3.6 -m venv --without-pip myvenvdir
+source myvenvdir/bin/activate
+curl https://bootstrap.pypa.io/get-pip.py | python
+deactivate
+source myvenvdir/bin/activate
+```
+
+Now packages install with `pip install` will be local to the virtual environment
