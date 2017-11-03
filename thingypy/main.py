@@ -36,39 +36,41 @@ class StartAndTest():
         self._state = None
 
         print("# Connecting to Thingy with address {}...".format(MAC_ADDRESS))
-        thingy = thingy52.Thingy52(MAC_ADDRESS)
+        self.thingy = thingy52.Thingy52(MAC_ADDRESS)
 
         #print("# Setting notification handler to default handler...")
         #thingy.setDelegate(thingy52.MyDelegate())
         print("# Setting notification handler to new handler...")
 
-        thingy.setDelegate(NotificationDelegate(), self)
+        self.thingy.setDelegate(NotificationDelegate(), self)
 
         print("# Configuring and enabling temperature notification...")
-        thingy.environment.enable()
-        thingy.environment.configure(temp_int=1000)
-        thingy.environment.set_temperature_notification(True)
+        self.thingy.environment.enable()
+        self.thingy.environment.configure(temp_int=1000)
+        self.thingy.environment.set_temperature_notification(True)
 
         print("# Configuring and enabling button press notification...")
-        thingy.ui.enable()
-        thingy.ui.set_btn_notification(True)
+        self.thingy.ui.enable()
+        self.thingy.ui.set_btn_notification(True)
 
     def waitfordata(self):
         print("# Waiting for three notifications...")
-        thingy.waitForNotifications(timeout=5)
+        self.thingy.waitForNotifications(timeout=5)
         print("Internal state")
-        print self._state
-        thingy.waitForNotifications(timeout=5)
+        print(self._state)
+        self.thingy.waitForNotifications(timeout=5)
         print("Internal state")
-        print self._state
-        thingy.waitForNotifications(timeout=5)
+        print(self._state)
+        self.thingy.waitForNotifications(timeout=5)
         print("Internal state")
-        print self._state
+        print(self._state)
     
     def disconnect(self):
         print("# Disconnecting...")
-        thingy.disconnect()
+        self.thingy.disconnect()
 
 
 if (__name__ is "__main__"):
     t = StartAndTest()
+    t.waitfordata()
+    t.disconnect()
