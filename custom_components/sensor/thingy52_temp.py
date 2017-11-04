@@ -31,7 +31,7 @@ class NotificationDelegate(btle.DefaultDelegate):
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
 
-            self.thingyobj._state = self._str_to_int(teptep[:-2])
+            self.thingyobj._state = (self._str_to_int(teptep[:-2]) + (int(teptep[-2:], 16)/100)
     
     def _str_to_int(self, s):
         """ Transform hex str into int. """
@@ -42,7 +42,7 @@ class NotificationDelegate(btle.DefaultDelegate):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
-    mac_address = config.get(CONF_HOST)
+    mac_address=config.get(CONF_MAC)
     add_devices([Thingy52TempSensor(mac_address)])
 
 
