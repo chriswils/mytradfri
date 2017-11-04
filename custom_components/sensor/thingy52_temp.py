@@ -9,7 +9,7 @@
 
 """
 
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import TEMP_CELSIUS, CONF_HOST
 from homeassistant.helpers.entity import Entity
 from bluepy import btle, thingy52
 import binascii
@@ -46,7 +46,7 @@ class NotificationDelegate(btle.DefaultDelegate):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
-    mac_address = config.get(CONF_MAC)
+    mac_address = config.get(CONF_HOST)
     add_devices([Thingy52TempSensor(mac_address)])
 
 
