@@ -30,8 +30,13 @@ class NotificationDelegate(btle.DefaultDelegate):
             teptep = binascii.b2a_hex(data)
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
+            
+            tempinteg = self._str_to_int(teptep[:-2])
+            div = 0
+            tempdec = int(teptep[-2:], 16) / 100
 
-            self.thingyobj._state = (self._str_to_int(teptep[:-2]) + (int(teptep[-2:], 16)/100)
+            div = 10 if((int(teptep[-2:], 16) / 100) < 10) else 100
+            self.thingyobj._state = (tempinteg + (tempdec / div))
     
     def _str_to_int(self, s):
         """ Transform hex str into int. """
