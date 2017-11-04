@@ -56,7 +56,7 @@ class Thingy52TempSensor(Entity):
 
     def __init__(self, mac):
         """Initialize the sensor."""
-        print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
+        print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(mac))
         self.thingy = thingy52.Thingy52(mac)
 
         # Set delegate, and pass on a reference to self
