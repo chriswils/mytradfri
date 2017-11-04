@@ -33,9 +33,9 @@ class NotificationDelegate(btle.DefaultDelegate):
             
             tempinteg = self._str_to_int(teptep[:-2])
             div = 0
-            tempdec = int(teptep[-2:], 16) / 100
+            tempdec = int(teptep[-2:], 16)
 
-            div = 1 if((int(teptep[-2:], 16) / 100) < 10) else 10
+            div = 100 if((int(teptep[-2:], 16) / 10) > 1.0) else 10
             self.thingyobj._state = (tempinteg + (tempdec / div))
     
     def _str_to_int(self, s):
@@ -69,7 +69,7 @@ class Thingy52TempSensor(Entity):
         # Enable notifications 
         self.thingy.environment.set_temperature_notification(True)
 
-        self._state = 10
+        self._state = None
 
     @property
     def name(self):

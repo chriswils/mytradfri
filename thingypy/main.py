@@ -23,7 +23,7 @@ class NotificationDelegate(btle.DefaultDelegate):
             div = 0
             tempdec = int(teptep[-2:], 16) / 100
 
-            if (((int(teptep[-2:], 16) / 100) < 10) ? div=10: div=100)
+            div = 10 if((int(teptep[-2:], 16) / 100) < 10) else 100
             self.thingyobj._state = (tempinteg + (tempdec / div))
 
         if (hnd == thingy52.ui_button_handle):
