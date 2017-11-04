@@ -35,7 +35,7 @@ class NotificationDelegate(btle.DefaultDelegate):
             div = 0
             tempdec = int(teptep[-2:], 16) / 100
 
-            div = 10 if((int(teptep[-2:], 16) / 100) < 10) else 100
+            div = 1 if((int(teptep[-2:], 16) / 100) < 10) else 10
             self.thingyobj._state = (tempinteg + (tempdec / div))
     
     def _str_to_int(self, s):
