@@ -23,6 +23,9 @@ state = None
 
 """ Custom delegate class to handle notifications from the Thingy:52 """
 class NotificationDelegate(btle.DefaultDelegate):
+    def __init__(self, obj):
+        self.thingyobj = obj
+
     print("# [THINGYTEMP]: Delegate class called")
     def handleNotification(self, hnd, data):
         print("# [THINGYTEMP]: Got notification")
@@ -32,7 +35,7 @@ class NotificationDelegate(btle.DefaultDelegate):
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
 
-            state = self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)
+            self.thingyobj._state = self._str_to_int(teptep[:-2])
     
     def _str_to_int(self, s):
         """ Transform hex str into int. """
@@ -55,7 +58,7 @@ class Thingy52TempSensor(Entity):
         self.thingy = thingy52.Thingy52(MAC_ADDRESS)
 
         # Set delegate, and pass on a reference to self
-        self.thingy.setDelegate(NotificationDelegate())
+        self.thingy.setDelegate(NotificationDelegate(self))
 
         print("#[THINGYTEMP]: Configuring and enabling temperature notification...")
         self.thingy.environment.enable()
