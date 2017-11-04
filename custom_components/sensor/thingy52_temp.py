@@ -46,16 +46,17 @@ class NotificationDelegate(btle.DefaultDelegate):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
-    add_devices([Thingy52TempSensor()])
+    mac_address = config.get(CONF_MAC)
+    add_devices([Thingy52TempSensor(mac_address)])
 
 
 class Thingy52TempSensor(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self):
+    def __init__(self, mac):
         """Initialize the sensor."""
         print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
-        self.thingy = thingy52.Thingy52(MAC_ADDRESS)
+        self.thingy = thingy52.Thingy52(mac)
 
         # Set delegate, and pass on a reference to self
         self.thingy.setDelegate(NotificationDelegate(self))
