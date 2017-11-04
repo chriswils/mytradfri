@@ -67,7 +67,7 @@ class Thingy52TempSensor(Entity):
         # Enable notifications 
         self.thingy.environment.set_temperature_notification(True)
 
-        self._state = None
+        self._state = 10
 
     @property
     def name(self):
@@ -77,12 +77,6 @@ class Thingy52TempSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        # thingy.waitForNotifications(timeout=5)
-
-        if (state is None):
-            self._state = 20
-        else:
-            self._state = state
         return self._state
 
     @property
@@ -96,5 +90,5 @@ class Thingy52TempSensor(Entity):
         This is the only method that should fetch new data for Home Assistant.
         """
         self.thingy.waitForNotifications(timeout=5)
-
-        self._state = state
+        print("  # [THINGYTEMP]: method uppdate, state is {}".format(self._state))
+        # self._state = state
