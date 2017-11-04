@@ -19,7 +19,7 @@ class NotificationDelegate(btle.DefaultDelegate):
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
             
-            self.thingyobj._state = self._str_to_int(teptep[:-2]), int(teptep[-2:], 16))
+            self.thingyobj._state = self._str_to_int(teptep[:-2])#, int(teptep[-2:], 16))
 
         if (hnd == thingy52.ui_button_handle):
             print("Notification: Button press received: {}".format(repr(data)))
@@ -32,7 +32,7 @@ class NotificationDelegate(btle.DefaultDelegate):
         return i 
 
 class StartAndTest():
-    def __init__():
+    def __init__(self):
         self._state = None
 
         print("# Connecting to Thingy with address {}...".format(MAC_ADDRESS))
@@ -42,7 +42,7 @@ class StartAndTest():
         #thingy.setDelegate(thingy52.MyDelegate())
         print("# Setting notification handler to new handler...")
 
-        self.thingy.setDelegate(NotificationDelegate(), self)
+        self.thingy.setDelegate(NotificationDelegate(self))
 
         print("# Configuring and enabling temperature notification...")
         self.thingy.environment.enable()
@@ -70,7 +70,7 @@ class StartAndTest():
         self.thingy.disconnect()
 
 
-if (__name__ is "__main__"):
+if (__name__ == "__main__"):
     t = StartAndTest()
     t.waitfordata()
     t.disconnect()
