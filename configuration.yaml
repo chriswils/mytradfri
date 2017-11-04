@@ -59,7 +59,7 @@ sun:
 sensor:
   - platform: yr
   - platform: thingy52_temp
-    host: "d0:c0:1d:b9:45:e1"
+    mac: "d0:c0:1d:b9:45:e1"
 
 # Text to speech
 tts:

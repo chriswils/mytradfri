@@ -17,9 +17,6 @@ import binascii
 # DEPENDENCIES = ['libglib2.0-dev']
 # REQUIREMENTS = ['bluepy']
 
-CONF_SENSORS = sensors
-CONF_TEMP = temp
-CONF_HUMID = humid
 """ Custom delegate class to handle notifications from the Thingy:52 """
 class NotificationDelegate(btle.DefaultDelegate):
     def __init__(self, obj):
@@ -46,27 +43,7 @@ class NotificationDelegate(btle.DefaultDelegate):
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
     mac_address = config.get(CONF_HOST)
-    environments = config.get(CONF_SENSORS)
-    print("=================")
-    print(environments)
-    sensor = []
-
-    print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
-    thingy = thingy52.Thingy52(mac)
-
-    # Set delegate, and pass on a reference to self
-    thingy.setDelegate(NotificationDelegate(self))
-
-    print("#[THINGYTEMP]: Configuring and enabling temperature notification...")
-    thingy.environment.enable()
-    # Temperature update interval 1000ms = 1s
-    thingy.environment.configure(temp_int=1000)
-    # Enable notifications 
-    thingy.environment.set_temperature_notification(True)
-
-    for el in environments:
-        sensors.append(Thingy52TempSensor(el.get(name), ))
-    add_devices(sensors)
+    add_devices([Thingy52TempSensor(mac_address)])
 
 
 class Thingy52TempSensor(Entity):
@@ -74,8 +51,20 @@ class Thingy52TempSensor(Entity):
 
     def __init__(self, mac):
         """Initialize the sensor."""
-        g
-        self._state = None
+        print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
+        self.thingy = thingy52.Thingy52(mac)
+
+        # Set delegate, and pass on a reference to self
+        self.thingy.setDelegate(NotificationDelegate(self))
+
+        print("#[THINGYTEMP]: Configuring and enabling temperature notification...")
+        self.thingy.environment.enable()
+        # Temperature update interval 1000ms = 1s
+        self.thingy.environment.configure(temp_int=1000)
+        # Enable notifications 
+        self.thingy.environment.set_temperature_notification(True)
+
+        self._state = 10
 
     @property
     def name(self):
