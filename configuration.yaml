@@ -61,8 +61,11 @@ sensor:
   - platform: thingy52_temp
     mac: "d0:c0:1d:b9:45:e1"
     sensors:
-      name: temp
-      name: humid
+      temperature:
+      humidity:
+      gas:
+      pressure:
+      battery:
 
 # Text to speech
 tts:

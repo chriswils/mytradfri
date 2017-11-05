@@ -17,25 +17,78 @@ import binascii
 # DEPENDENCIES = ['libglib2.0-dev']
 # REQUIREMENTS = ['bluepy']
 
-CONF_SENSORS = sensors
-CONF_TEMP = temp
-CONF_HUMID = humid
+CONF_SENSORS = 'sensors'
+CONF_TEMP = 'temp'
+CONF_HUMID = 'humid'
+
+SENSOR_UNITS = {
+    "humidity": '%',
+    "temperature" : TEMP_CELSIUS,
+    "gas": 'ppm',
+    "pressure": 'hPA',
+    "battery": '%'
+}
+
+
 """ Custom delegate class to handle notifications from the Thingy:52 """
 class NotificationDelegate(btle.DefaultDelegate):
-    def __init__(self, obj):
-        self.thingyobj = obj
+    def __init__(self, sensors):
+        self.thingysensors = {}
+        for s in sensors:
+            self.thingysensors[s._name] = s
 
-    print("# [THINGYTEMP]: Delegate class called")
+    print("# [THINGYSENSOR]: Delegate class called")
     def handleNotification(self, hnd, data):
-        print("# [THINGYTEMP]: Got notification")
+        print("# [THINGYSENSOR]: Got notification")
         if (hnd == thingy52.e_temperature_handle):
-            print("Notification: Temperature received: {}".format(repr(data)))
             teptep = binascii.b2a_hex(data)
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
+            tempinteg = self._str_to_int(teptep[:-2])
+            tempdec = int(teptep[-2:], 16)
 
-            self.thingyobj._state = self._str_to_int(teptep[:-2])
+            div = 100 if((int(teptep[-2:], 16) / 10) > 1.0) else 10
+            print("Setting state for {}".format(self.thingysensors["temperature"]._name))
+            self.thingysensors["temperature"]._state = (tempinteg + (tempdec / div))   
+        
+        elif (hnd == thingy52.e_humidity_handle):
+            teptep = binascii.b2a_hex(data)
+            print('Notification: Humidity received: {} %'.format(
+                self._str_to_int(teptep)))
+            
+            print("Setting state for {}".format(self.thingysensors["humidity"]._name))
+            self.thingysensors["humidity"]._state = self._str_to_int(teptep)
+
+        elif (hnd == thingy52.e_pressure_handle):
+            pressure_int, pressure_dec = self._extract_pressure_data(data)
+            print('Notification: Press received: {}.{} hPa'.format(
+                        pressure_int, pressure_dec))
+
+            div = 100 if( (pressure_dec / 10) > 1.0) else 10
+            self.thingysensors["pressure"]._state = pressure_int + (pressure_dec/div)
+
+        elif (hnd == thingy52.e_gas_handle):
+            eco2, tvoc = self._extract_gas_data(data)
+            print(
+                'Notification: Gas received: eCO2 ppm: {}, TVOC ppb: {} %'.format(eco2, tvoc))
+            self.thingysensors["gas"]._state = eco2
     
+    def _extract_pressure_data(self, data):
+        """ Extract pressure data from data string. """
+        teptep = binascii.b2a_hex(data)
+        pressure_int = 0
+        for i in range(0, 4):
+                pressure_int += (int(teptep[i*2:(i*2)+2], 16) << 8*i)
+        pressure_dec = int(teptep[-2:], 16)
+        return (pressure_int, pressure_dec)
+
+    def _extract_gas_data(self, data):
+        """ Extract gas data from data string. """
+        teptep = binascii.b2a_hex(data)
+        eco2 = int(teptep[:2]) + (int(teptep[2:4]) << 8)
+        tvoc = int(teptep[4:6]) + (int(teptep[6:8]) << 8)
+        return eco2, tvoc
+
     def _str_to_int(self, s):
         """ Transform hex str into int. """
         i = int(s, 16)
@@ -45,42 +98,61 @@ class NotificationDelegate(btle.DefaultDelegate):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
-    mac_address = config.get(CONF_HOST)
+    mac_address = config.get(CONF_MAC)
     environments = config.get(CONF_SENSORS)
-    print("=================")
-    print(environments)
-    sensor = []
+    sensors = []
+    print("#[THINGYSENSOR]: Connecting to Thingy with address {}...".format(mac_address))
+    thingy = thingy52.Thingy52(mac_address)
 
-    print("#[THINGYTEMP]: Connecting to Thingy with address {}...".format(MAC_ADDRESS))
-    thingy = thingy52.Thingy52(mac)
 
-    # Set delegate, and pass on a reference to self
-    thingy.setDelegate(NotificationDelegate(self))
-
-    print("#[THINGYTEMP]: Configuring and enabling temperature notification...")
+    print("#[THINGYSENSOR]: Configuring and enabling environment notifications...")
     thingy.environment.enable()
-    # Temperature update interval 1000ms = 1s
-    thingy.environment.configure(temp_int=1000)
-    # Enable notifications 
-    thingy.environment.set_temperature_notification(True)
 
-    for el in environments:
-        sensors.append(Thingy52TempSensor(el.get(name), ))
+    # Enable notifications for enabled services
+    # Update interval 1000ms = 1s
+    if "temperature" in environments:
+        print("Enabling notification for temperature")
+        thingy.environment.set_temperature_notification(True)
+        thingy.environment.configure(temp_int=1000)
+    if "humidity" in environments:
+        print("Enabling notification for humidity")
+        thingy.environment.set_humidity_notification(True)
+        thingy.environment.configure(humid_int=1000)
+    if "gas" in environments:
+        thingy.environment.set_gas_notification(True)
+        # 1 = 1 s interval
+        # 2 = 10 s interval
+        # 3 = 60 s interval
+        thingy.environment.configure(gas_mode_int=1)
+    if "pressure" in environments:
+        thingy.environment.set_pressure_notification(True)
+        thingy.environment.configure(press_int=1000)
+    if "battery" in environments:
+        thingy.battery.enable()
+    
+
+    for sensorname in environments:
+        print("Adding sensor: {}".format(sensorname))
+        sensors.append(Thingy52Sensor(thingy, sensorname, SENSOR_UNITS[sensorname]))
+    
     add_devices(sensors)
+    thingy.setDelegate(NotificationDelegate(sensors))
 
-
-class Thingy52TempSensor(Entity):
+class Thingy52Sensor(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self, mac):
+    def __init__(self, thingy, name, unit_measurement=TEMP_CELSIUS):
         """Initialize the sensor."""
-        
+        self._thingy = thingy
+        self._name = name
         self._state = None
+        self._unit_measurement = unit_measurement
+        
 
     @property
     def name(self):
         """Return the name of the sensor."""
-        return 'Thingy52 Temperature'
+        return ("Thingy52:" + self._name)
 
     @property
     def state(self):
@@ -90,13 +162,20 @@ class Thingy52TempSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        return TEMP_CELSIUS
+        return self._unit_measurement
 
     def update(self):
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self.thingy.waitForNotifications(timeout=5)
-        print("  # [THINGYTEMP]: method uppdate, state is {}".format(self._state))
+        if(self._name == "battery"):
+                self._state = self._thingy.battery.read()
+        else:
+            self._thingy.waitForNotifications(timeout=5)
+            print("# [{}]: method update, state is {}".format(self._name, self._state))
+
         # self._state = state
+
+if (__name__ == "__main__"):
+    setup_platform()
