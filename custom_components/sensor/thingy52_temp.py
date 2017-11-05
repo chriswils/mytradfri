@@ -1,5 +1,6 @@
 """
     HomeAssistant: Thingy52 temperature sensor
+    Author: @chriswils
 
     This sensor device is taking data from the Nordic Thingy:52 IoT Sensor Platform.
     It is derived from HA example sensor; https://home-assistant.io/developers/platform_example_sensor/
@@ -7,32 +8,9 @@
     found at Nordic Semiconductor's devzone blog:
     https://devzone.nordicsemi.com/blogs/1162/nordic-thingy52-raspberry-pi-python-interface/
     
-    BATTERY_SERVICE_UUID = 0x180F
-    BATTERY_LEVEL_UUID = 0x2A19
-
-    def Nordic_UUID(val):
-        # Adds base UUID and inserts value to return Nordic UUID
-        return UUID("EF68%04X-9B35-4933-9B10-52FFA9740042" % val)
-
-    batteryServiceUUID = Nordic_UUID(BATTERY_SERVICE_UUID) 
-    battery_charUUID = NORDIC_UUID(BATTERY_LEVEL_UUID)
-    getCharacteristic...
-    battery_char = self.environment_service.getCharacteristics(self.batteryServiceUUID)[0]
-    battery_handle = self.battery_char.getHandle()
-    battery_cccd = self.battery_char.getDescriptors(forUUID=CCCD_UUID)[0]
-
-    def set_battery_notification(self, state):
-        if self.battery_cccd is not None:
-            if state == True:
-                self.battery_cccd.write(b"\x01\x00", True)
-            else:
-                self.battery_cccd.write(b"\x00\x00", True)
-
-
-
 """
 
-from homeassistant.const import TEMP_CELSIUS, CONF_MAC
+from homeassistant.const import TEMP_CELSIUS, CONF_MAC, CONF_SCAN_INTERVAL, CONF_SENSORS
 from homeassistant.helpers.entity import Entity
 from bluepy import btle, thingy52
 import binascii
@@ -43,14 +21,13 @@ import binascii
 # Definition of all UUID used by Thingy
 CCCD_UUID = 0x2902
 
-CONF_SENSORS = 'sensors'
-CONF_TEMP = 'temp'
-CONF_HUMID = 'humid'
+CONF_GAS_INT = 'gas_interval'
 
 SENSOR_UNITS = {
     "humidity": '%',
     "temperature" : TEMP_CELSIUS,
-    "gas": 'ppm',
+    "co2": 'ppm',
+    "tvoc": 'ppb',
     "pressure": 'hPA',
     "battery": '%'
 }
@@ -63,45 +40,38 @@ class NotificationDelegate(btle.DefaultDelegate):
         for s in sensors:
             self.thingysensors[s._name] = s
 
-    print("# [THINGYSENSOR]: Delegate class called")
+    # print("# [THINGYSENSOR]: Delegate class called")
     def handleNotification(self, hnd, data):
         print("# [THINGYSENSOR]: Got notification")
         if (hnd == thingy52.e_temperature_handle):
             teptep = binascii.b2a_hex(data)
-            print('Notification: Temp received:  {}.{} degCelcius'.format(
-                        self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
             tempinteg = self._str_to_int(teptep[:-2])
             tempdec = int(teptep[-2:], 16)
 
             div = 100 if((int(teptep[-2:], 16) / 10) > 1.0) else 10
-            print("Setting state for {}".format(self.thingysensors["temperature"]._name))
             self.thingysensors["temperature"]._state = (tempinteg + (tempdec / div))   
         
         elif (hnd == thingy52.e_humidity_handle):
             teptep = binascii.b2a_hex(data)
-            print('Notification: Humidity received: {} %'.format(
-                self._str_to_int(teptep)))
-            
-            print("Setting state for {}".format(self.thingysensors["humidity"]._name))
             self.thingysensors["humidity"]._state = self._str_to_int(teptep)
 
         elif (hnd == thingy52.e_pressure_handle):
             pressure_int, pressure_dec = self._extract_pressure_data(data)
-            print('Notification: Press received: {}.{} hPa'.format(
-                        pressure_int, pressure_dec))
-
             div = 100 if( (pressure_dec / 10) > 1.0) else 10
             self.thingysensors["pressure"]._state = pressure_int + (pressure_dec/div)
 
         elif (hnd == thingy52.e_gas_handle):
             eco2, tvoc = self._extract_gas_data(data)
-            print(
-                'Notification: Gas received: eCO2 ppm: {}, TVOC ppb: {} %'.format(eco2, tvoc))
-            self.thingysensors["gas"]._state = eco2
+            if ("co2" in self.thingysensors):
+                if(eco2 != 0):
+                    self.thingysensors["co2"]._state = eco2
+            if ("tvoc" in self.thingysensors):
+                self.thingysensors["tvoc"]._state = tvoc
+
         
         elif (hnd == e_battery_handle):
-            print("Battery notification received, data:", ' ')
-            print(repr(data))
+            teptep = binascii.b2a_hex(data)
+            self.thingysensors["battery"]._state = int(teptep, 16)
     
     def _extract_pressure_data(self, data):
         """ Extract pressure data from data string. """
@@ -130,7 +100,15 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
     global e_battery_handle
     mac_address = config.get(CONF_MAC)
-    environments = config.get(CONF_SENSORS)
+    conf_sensors = config.get(CONF_SENSORS)
+    print(conf_sensors)
+    scan_interval = config.get(CONF_SCAN_INTERVAL)
+    gas_interval = config.get(CONF_GAS_INT)
+    print (scan_interval)
+    print(type(scan_interval))
+    scan_interval = scan_interval.total_seconds()
+    print (scan_interval)
+    notification_interval = int(scan_interval) * 1000
     sensors = []
     print("#[THINGYSENSOR]: Connecting to Thingy with address {}...".format(mac_address))
     thingy = thingy52.Thingy52(mac_address)
@@ -141,31 +119,29 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     # Enable notifications for enabled services
     # Update interval 1000ms = 1s
-    if "temperature" in environments:
+    if "temperature" in conf_sensors:
         print("Enabling notification for temperature")
         thingy.environment.set_temperature_notification(True)
-        thingy.environment.configure(temp_int=1000)
-    if "humidity" in environments:
+        thingy.environment.configure(temp_int=notification_interval)
+    if "humidity" in conf_sensors:
         print("Enabling notification for humidity")
         thingy.environment.set_humidity_notification(True)
-        thingy.environment.configure(humid_int=1000)
-    if "gas" in environments:
+        thingy.environment.configure(humid_int=notification_interval)
+    if ( ("co2" in conf_sensors) or ("tvoc" in conf_sensors) ):
         thingy.environment.set_gas_notification(True)
-        # 1 = 1 s interval
-        # 2 = 10 s interval
-        # 3 = 60 s interval
-        thingy.environment.configure(gas_mode_int=1)
-    if "pressure" in environments:
+        thingy.environment.configure(gas_mode_int=gas_interval)
+    if "pressure" in conf_sensors:
         thingy.environment.set_pressure_notification(True)
-        thingy.environment.configure(press_int=1000)
-    if "battery" in environments:
+        thingy.environment.configure(press_int=notification_interval)
+    if "battery" in conf_sensors:
         thingy.battery.enable()
-        e_battery_handle = thingy.battery.data.getHandle()
+        # Battery notification not included in bluepy.thingy52
+        e_battery_handle = thingy.battery.data.getHandle() # Is this needed?
         battery_ccd = thingy.battery.data.getDescriptors(forUUID=CCCD_UUID)[0]
         battery_ccd.write(b"\x01\x00", True)
     
 
-    for sensorname in environments:
+    for sensorname in conf_sensors:
         print("Adding sensor: {}".format(sensorname))
         sensors.append(Thingy52Sensor(thingy, sensorname, SENSOR_UNITS[sensorname]))
     
@@ -200,16 +176,18 @@ class Thingy52Sensor(Entity):
 
     def update(self):
         """Fetch new state data for the sensor.
-
         This is the only method that should fetch new data for Home Assistant.
         """
-        if(self._name == "battery"):
-                self._state = self._thingy.battery.read()
-        else:
-            self._thingy.waitForNotifications(timeout=5)
-            print("# [{}]: method update, state is {}".format(self._name, self._state))
 
-        # self._state = state
+        # For some reason, without this, nothing gets updated and no 
+        # notifications are read
+        # if(self._name == "battery"):
+        #         self._state = self._thingy.battery.read()
+
+        # or we do it loke this, but then we wont get battery readings
+        # all the time. Maybe that is for the best
+        self._thingy.waitForNotifications(timeout=5)
+        print("# [{}]: method update, state is {}".format(self._name, self._state))
 
 if (__name__ == "__main__"):
     setup_platform()
