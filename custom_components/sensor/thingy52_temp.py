@@ -6,6 +6,29 @@
     and uses bluepy's Thingy:52 implementation. More docs on this and snippets used in this file is 
     found at Nordic Semiconductor's devzone blog:
     https://devzone.nordicsemi.com/blogs/1162/nordic-thingy52-raspberry-pi-python-interface/
+    
+    BATTERY_SERVICE_UUID = 0x180F
+    BATTERY_LEVEL_UUID = 0x2A19
+
+    def Nordic_UUID(val):
+        # Adds base UUID and inserts value to return Nordic UUID
+        return UUID("EF68%04X-9B35-4933-9B10-52FFA9740042" % val)
+
+    batteryServiceUUID = Nordic_UUID(BATTERY_SERVICE_UUID) 
+    battery_charUUID = NORDIC_UUID(BATTERY_LEVEL_UUID)
+    getCharacteristic...
+    battery_char = self.environment_service.getCharacteristics(self.batteryServiceUUID)[0]
+    battery_handle = self.battery_char.getHandle()
+    battery_cccd = self.battery_char.getDescriptors(forUUID=CCCD_UUID)[0]
+
+    def set_battery_notification(self, state):
+        if self.battery_cccd is not None:
+            if state == True:
+                self.battery_cccd.write(b"\x01\x00", True)
+            else:
+                self.battery_cccd.write(b"\x00\x00", True)
+
+
 
 """
 
@@ -16,6 +39,9 @@ import binascii
 
 # DEPENDENCIES = ['libglib2.0-dev']
 # REQUIREMENTS = ['bluepy']
+
+# Definition of all UUID used by Thingy
+CCCD_UUID = 0x2902
 
 CONF_SENSORS = 'sensors'
 CONF_TEMP = 'temp'
@@ -85,8 +111,8 @@ class NotificationDelegate(btle.DefaultDelegate):
     def _extract_gas_data(self, data):
         """ Extract gas data from data string. """
         teptep = binascii.b2a_hex(data)
-        eco2 = int(teptep[:2]) + (int(teptep[2:4]) << 8)
-        tvoc = int(teptep[4:6]) + (int(teptep[6:8]) << 8)
+        eco2 = int(teptep[:2], 16)) + (int(teptep[2:4], 16) << 8)
+        tvoc = int(teptep[4:6], 16) + (int(teptep[6:8], 16) << 8)
         return eco2, tvoc
 
     def _str_to_int(self, s):
@@ -98,6 +124,7 @@ class NotificationDelegate(btle.DefaultDelegate):
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """ Set up the Thingy 52 temperature sensor"""
+    global e_battery_handle
     mac_address = config.get(CONF_MAC)
     environments = config.get(CONF_SENSORS)
     sensors = []
@@ -129,6 +156,10 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         thingy.environment.configure(press_int=1000)
     if "battery" in environments:
         thingy.battery.enable()
+        e_battery_handle = thingy.battery.battery_char.getHandle()
+        battery_cccd = thingy.battery.battery_char.getDescriptors(forUUID=CCCD_UUID)[
+            0]
+        battery_ccd.write(b"\x01\x00", True)
     
 
     for sensorname in environments:
@@ -152,7 +183,7 @@ class Thingy52Sensor(Entity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return ("Thingy52:" + self._name)
+        return ("Thingy52: " + self._name)
 
     @property
     def state(self):
