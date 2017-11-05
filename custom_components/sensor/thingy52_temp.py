@@ -139,7 +139,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         e_battery_handle = thingy.battery.data.getHandle() # Is this needed?
         battery_ccd = thingy.battery.data.getDescriptors(forUUID=CCCD_UUID)[0]
         battery_ccd.write(b"\x01\x00", True)
-    
+
 
     for sensorname in conf_sensors:
         print("Adding sensor: {}".format(sensorname))
@@ -158,6 +158,7 @@ class Thingy52Sensor(Entity):
         self._state = None
         self._unit_measurement = unit_measurement
         
+
 
     @property
     def name(self):

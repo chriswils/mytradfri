@@ -19,7 +19,12 @@ class NotificationDelegate(btle.DefaultDelegate):
             print('Notification: Temp received:  {}.{} degCelcius'.format(
                         self._str_to_int(teptep[:-2]), int(teptep[-2:], 16)))
             
-            self.thingyobj._state = self._str_to_int(teptep[:-2])#, int(teptep[-2:], 16))
+            tempinteg = self._str_to_int(teptep[:-2])
+            div = 0
+            tempdec = int(teptep[-2:], 16) / 100
+
+            div = 10 if((int(teptep[-2:], 16) / 100) < 10) else 100
+            self.thingyobj._state = (tempinteg + (tempdec / div))
 
         if (hnd == thingy52.ui_button_handle):
             print("Notification: Button press received: {}".format(repr(data)))
