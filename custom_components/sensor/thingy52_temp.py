@@ -98,6 +98,10 @@ class NotificationDelegate(btle.DefaultDelegate):
             print(
                 'Notification: Gas received: eCO2 ppm: {}, TVOC ppb: {} %'.format(eco2, tvoc))
             self.thingysensors["gas"]._state = eco2
+        
+        elif (hnd == e_battery_handle):
+            print("Battery notification received, data:", ' ')
+            print(repr(data))
     
     def _extract_pressure_data(self, data):
         """ Extract pressure data from data string. """
@@ -156,9 +160,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         thingy.environment.configure(press_int=1000)
     if "battery" in environments:
         thingy.battery.enable()
-        e_battery_handle = thingy.battery.battery_char.getHandle()
-        battery_cccd = thingy.battery.battery_char.getDescriptors(forUUID=CCCD_UUID)[
-            0]
+        e_battery_handle = thingy.battery.data.getHandle()
+        battery_ccd = thingy.battery.data.getDescriptors(forUUID=CCCD_UUID)[0]
         battery_ccd.write(b"\x01\x00", True)
     
 
