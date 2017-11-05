@@ -59,7 +59,19 @@ sun:
 sensor:
   - platform: yr
   - platform: thingy52_temp
+    scan_interval: 30
+    # 1 = 1 s interval
+    # 2 = 10 s interval
+    # 3 = 60 s interval
+    gas_interval: 3
     mac: "d0:c0:1d:b9:45:e1"
+    sensors:
+      temperature:
+      humidity:
+      co2:
+      tvoc:
+      pressure:
+      battery:
 
 # Text to speech
 tts:
